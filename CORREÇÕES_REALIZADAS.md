@@ -89,6 +89,67 @@ Tentativa de venda: 1 Meio Frango
 
 ---
 
+### 🔧 Problema 3 Corrigido: Botões Desabilitados e Consumo Duplicado
+
+**Descrição dos Problemas:**
+1. Botões de variações compostas ficavam desabilitados quando estoque = 0 (mesmo com matéria-prima disponível)
+2. Ao vender o último item do estoque (ex: estoque = 1, vende 1), o sistema consumia TAMBÉM da matéria-prima
+
+**Comportamento Incorreto (Anterior):**
+```
+Cenário 1 - Botão desabilitado:
+Estoque: Meio Frango = 0, Frango Inteiro = 10
+❌ Botão "M" desabilitado (não permite clicar)
+❌ Não é possível adicionar ao carrinho
+
+Cenário 2 - Consumo duplicado:
+Estoque: Meio Frango = 1, Frango Inteiro = 10
+Vende: 1 Meio Frango
+❌ Consumiu 1 do Meio Frango (correto)
+❌ Consumiu 1 do Frango Inteiro (ERRADO - tinha estoque!)
+Resultado: Meio Frango = 0, Frango Inteiro = 9 (ERRADO!)
+```
+
+**Comportamento Correto (Atual):**
+```
+Cenário 1 - Botão habilitado:
+Estoque: Meio Frango = 0, Frango Inteiro = 10
+✅ Botão "M" habilitado (permite clicar)
+✅ Adiciona ao carrinho normalmente
+✅ Mensagem: "Este produto será feito sob demanda da matéria-prima"
+
+Cenário 2 - Consumo correto:
+Estoque: Meio Frango = 1, Frango Inteiro = 10
+Vende: 1 Meio Frango
+✅ Consumiu 1 do Meio Frango (correto)
+✅ NÃO consumiu Frango Inteiro (tinha estoque!)
+Resultado: Meio Frango = 0, Frango Inteiro = 10 (CORRETO!)
+```
+
+**Correções Implementadas:**
+1. **Botões de variação:** Não desabilitar quando é item composto (mesmo sem estoque)
+2. **Dialog de seleção:** Remover validação de estoque = 0 para itens compostos
+3. **Cálculo de isOutOfStock:** Não considerar produtos compostos como "sem estoque"
+4. **Lógica de consumo:** Usar `item.stock_quantity` (estoque ANTES da venda) para verificação correta
+5. **Mensagem amigável:** Quando estoque = 0 e é composto, mostra "será feito sob demanda"
+
+**Arquivos Modificados:**
+- `/src/pages/PDV.tsx`:
+  - Linhas 1474-1476: Cálculo de `isOutOfStock` corrigido
+  - Linhas 1158-1163: Usa estoque antes da venda (`stockBeforeSale`)
+  - Linhas 1874-1886: Dialog de seleção sem validação de estoque para compostos
+- `/src/components/ProductCardWithVariations.tsx`:
+  - Linhas 25-35: Interface `Variation` atualizada
+  - Linhas 97-111: Botões de variação não desabilitados para compostos
+
+**Resultado Final:**
+- ✅ Produtos compostos podem ser vendidos mesmo com estoque = 0
+- ✅ Botões sempre habilitados para produtos compostos
+- ✅ Consumo correto: só usa matéria-prima quando necessário
+- ✅ Não há mais consumo duplicado de matéria-prima
+
+---
+
 ## Data: 01/11/2024
 
 ---

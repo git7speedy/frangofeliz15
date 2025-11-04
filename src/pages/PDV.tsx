@@ -1140,28 +1140,31 @@ export default function PDV() {
       // Buscar dados completos da variação
       const { data: variation, error: varError } = await supabase
         .from("product_variations")
-        .select("is_composite, raw_material_product_id, raw_material_variation_id, yield_quantity, stock_quantity")
+        .select("is_composite, raw_material_product_id, raw_material_variation_id, yield_quantity")
         .eq("id", item.selectedVariation.id)
         .single();
 
       if (varError || !variation || !variation.is_composite) return;
 
-      const { is_composite, raw_material_product_id, raw_material_variation_id, yield_quantity, stock_quantity } = variation;
+      const { is_composite, raw_material_product_id, raw_material_variation_id, yield_quantity } = variation;
 
       if (!is_composite || (!raw_material_product_id && !raw_material_variation_id)) return;
 
-      // REGRA: Verificar se há estoque suficiente do produto composto
+      // REGRA: Verificar se havia estoque suficiente do produto composto ANTES da venda
+      // O estoque que estava disponível antes da venda está em item.stock_quantity
       // Se houver estoque suficiente, apenas consome do estoque (já foi feito na atualização normal)
       // Se NÃO houver estoque suficiente, consome da matéria-prima
       
-      if (stock_quantity >= item.quantity) {
-        // Tem estoque suficiente do produto composto, não precisa consumir matéria-prima
-        console.log(`Produto composto ${item.name} tem estoque suficiente (${stock_quantity}). Não consumindo matéria-prima.`);
+      const stockBeforeSale = item.stock_quantity || 0; // Estoque antes da venda
+      
+      if (stockBeforeSale >= item.quantity) {
+        // Tinha estoque suficiente do produto composto, não precisa consumir matéria-prima
+        console.log(`Produto composto ${item.name} tinha estoque suficiente (${stockBeforeSale}). Não consumindo matéria-prima.`);
         return;
       }
 
-      // Não tem estoque suficiente, precisa consumir matéria-prima
-      const quantityNeeded = item.quantity - stock_quantity; // Quantidade que precisa vir da matéria-prima
+      // Não tinha estoque suficiente, precisa consumir matéria-prima
+      const quantityNeeded = item.quantity - stockBeforeSale; // Quantidade que precisa vir da matéria-prima
       
       // Determinar se a matéria-prima é produto ou variação
       const isRawMaterialVariation = !!raw_material_variation_id;
@@ -1469,8 +1472,10 @@ export default function PDV() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {productsByCategory[categoryName].map((product) => {
                     const productVariations = allVariations.filter(v => v.product_id === product.id);
+                    // Para produtos com variações, considerar "sem estoque" apenas se TODAS as variações
+                    // estiverem sem estoque E nenhuma for composta
                     const isOutOfStock = product.has_variations 
-                      ? productVariations.every(v => v.stock_quantity === 0)
+                      ? productVariations.every(v => v.stock_quantity === 0 && !v.is_composite)
                       : product.stock_quantity === 0;
                     const isFavorite = favoriteProductIds.includes(product.id);
 
@@ -1871,13 +1876,16 @@ export default function PDV() {
                     ))}
                 </SelectContent>
               </Select>
-              {selectedVariationForProduct && selectedVariationForProduct.stock_quantity === 0 && (
+              {selectedVariationForProduct && selectedVariationForProduct.stock_quantity === 0 && !selectedVariationForProduct.is_composite && (
                 <p className="text-sm text-destructive">Esta variação está sem estoque.</p>
+              )}
+              {selectedVariationForProduct && selectedVariationForProduct.stock_quantity === 0 && selectedVariationForProduct.is_composite && (
+                <p className="text-sm text-muted-foreground">Este produto será feito sob demanda da matéria-prima.</p>
               )}
               <Button 
                 onClick={handleSelectVariationAndAddToCart} 
                 className="w-full"
-                disabled={!selectedVariationForProduct || selectedVariationForProduct.stock_quantity === 0}
+                disabled={!selectedVariationForProduct}
               >
                 Adicionar ao Carrinho
               </Button>
