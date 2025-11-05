@@ -28,6 +28,10 @@ interface Variation {
   name: string;
   price_adjustment: number;
   stock_quantity: number;
+  is_composite?: boolean; // Se é um item composto
+  raw_material_product_id?: string;
+  raw_material_variation_id?: string;
+  yield_quantity?: number;
 }
 
 interface ProductCardWithVariationsProps {
@@ -90,17 +94,21 @@ export default function ProductCardWithVariations({
           {product.has_variations ? (
             <div className="embla overflow-hidden w-fit max-w-[150px]" ref={emblaRef}>
               <div className="embla__container flex gap-1">
-                {productVariations.map(variation => (
-                  <Button
-                    key={variation.id}
-                    onClick={() => handleAddToCart(product, variation)}
-                    className="embla__slide flex-shrink-0 h-10 w-10 p-0 text-sm font-bold"
-                    variant="outline"
-                    disabled={variation.stock_quantity === 0}
-                  >
-                    {variation.name.charAt(0).toUpperCase()}
-                  </Button>
-                ))}
+                {productVariations.map(variation => {
+                  // Para itens compostos, não desabilitar o botão mesmo sem estoque
+                  const isDisabled = variation.stock_quantity === 0 && !variation.is_composite;
+                  return (
+                    <Button
+                      key={variation.id}
+                      onClick={() => handleAddToCart(product, variation)}
+                      className="embla__slide flex-shrink-0 h-10 w-10 p-0 text-sm font-bold"
+                      variant="outline"
+                      disabled={isDisabled}
+                    >
+                      {variation.name.charAt(0).toUpperCase()}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           ) : (
