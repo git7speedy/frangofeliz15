@@ -1164,7 +1164,7 @@ export default function PDV() {
         return;
       }
 
-      // Não tinha estoque suficiente, precisa consumir matéria-prima
+      // Não tinha estoque suficiente, precisa consumir matéria-prima e GERAR estoque
       const quantityNeeded = item.quantity - stockBeforeSale; // Quantidade que precisa vir da matéria-prima
       
       // Determinar se a matéria-prima é produto ou variação
@@ -1200,7 +1200,37 @@ export default function PDV() {
         return;
       }
 
-      console.log(`Produto composto ${item.name}: estoque insuficiente (${stock_quantity}/${item.quantity}). Consumiu ${rawMaterialToConsume} unidades de matéria-prima.`);
+      // IMPORTANTE: GERAR estoque do produto composto
+      // Cada matéria-prima gera yield_quantity unidades do produto composto
+      const unitsGenerated = rawMaterialToConsume * yield_quantity;
+      
+      // Buscar estoque atual do produto composto (após a venda já ter sido descontada)
+      const { data: currentVariation, error: getCurrentError } = await supabase
+        .from("product_variations")
+        .select("stock_quantity")
+        .eq("id", item.selectedVariation.id)
+        .single();
+
+      if (getCurrentError || !currentVariation) {
+        console.error(`Erro ao buscar estoque atual da variação:`, getCurrentError?.message);
+        return;
+      }
+
+      // Novo estoque = estoque atual (já descontado) + unidades geradas
+      // Exemplo: Estoque era 0, vendeu 1 (ficou -1), gera 2 (fica 1)
+      const newCompositeStock = currentVariation.stock_quantity + unitsGenerated;
+
+      const { error: updateCompositeError } = await supabase
+        .from("product_variations")
+        .update({ stock_quantity: newCompositeStock })
+        .eq("id", item.selectedVariation.id);
+
+      if (updateCompositeError) {
+        console.error(`Erro ao atualizar estoque do produto composto:`, updateCompositeError.message);
+        return;
+      }
+
+      console.log(`Produto composto ${item.name}: Consumiu ${rawMaterialToConsume} matéria-prima, gerou ${unitsGenerated} unidades, estoque final = ${newCompositeStock}.`);
 
       // Registrar a transação para possível reversão
       const { data: orderItems, error: itemsError } = await supabase
@@ -1219,7 +1249,7 @@ export default function PDV() {
             variation_id: item.selectedVariation.id,
             raw_material_product_id: raw_material_product_id,
             raw_material_consumed: rawMaterialToConsume,
-            variations_generated: rawMaterialToConsume * yield_quantity, // Unidades que seriam geradas
+            variations_generated: unitsGenerated, // Unidades que foram geradas
           });
       }
     });

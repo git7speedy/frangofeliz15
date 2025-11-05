@@ -45,33 +45,84 @@ Permitir que variações de produtos sejam derivadas de outros produtos (matéri
 
 ### Ao Vender um Item Composto:
 
-**Regra Principal:** O sistema SEMPRE consome primeiro o estoque do produto composto. Só consome matéria-prima se o estoque estiver insuficiente.
+**Regra Principal:** O sistema SEMPRE consome primeiro o estoque do produto composto. Só consome matéria-prima se o estoque estiver insuficiente. **Quando consome matéria-prima, GERA estoque do produto composto.**
 
-**Exemplo 1:** Cliente compra 1 "Meio Frango Assado Recheado" (COM estoque = 5)
+---
 
+**Exemplo 1 (Cenário 1):** Cliente compra 1 "Meio Frango" (COM estoque = 5)
+
+```
+Estoque inicial:
+- Meio Frango = 5
+- Frango Inteiro = 10
+- Rendimento: 1 Frango Inteiro → 2 Meios Frangos
+
+Ação: Venda de 1 Meio Frango
+
+Processamento:
 1. ✅ Sistema verifica que é um item composto
-2. ✅ Verifica que há estoque suficiente (5 unidades)
-3. ✅ Consome 1 unidade do estoque do produto composto
-4. ✅ Estoque final da variação = 4 unidades
-5. ✅ Matéria-prima NÃO é consumida
+2. ✅ Verifica que há estoque suficiente (5 >= 1)
+3. ✅ Consome 1 unidade do estoque do Meio Frango
+4. ✅ Matéria-prima NÃO é consumida
 
-**Exemplo 2:** Cliente compra 3 "Meio Frango Assado Recheado" (COM estoque = 1)
+Resultado:
+✅ Meio Frango = 4
+✅ Frango Inteiro = 10 (sem mudança)
+✅ Vendido = 1 Meio Frango
+```
 
+---
+
+**Exemplo 2 (Cenário 2):** Cliente compra 1 "Meio Frango" (SEM estoque = 0, COM matéria-prima)
+
+```
+Estoque inicial:
+- Meio Frango = 0
+- Frango Inteiro = 10
+- Rendimento: 1 Frango Inteiro → 2 Meios Frangos
+
+Ação: Venda de 1 Meio Frango
+
+Processamento:
 1. ✅ Sistema verifica que é um item composto
-2. ✅ Verifica que NÃO há estoque suficiente (1 < 3)
-3. ✅ Consome 1 unidade do estoque do produto composto
-4. ✅ Faltam 2 unidades → consome matéria-prima
-5. ✅ Consome 1 unidade da matéria-prima (2 vendas / 2 rendimento = 1)
-6. ✅ Registra a transação para possível reversão
+2. ✅ Verifica que NÃO há estoque (0 < 1)
+3. ✅ Verifica que há matéria-prima disponível
+4. ✅ Consome 1 Frango Inteiro
+5. ✅ GERA 2 Meios Frangos no estoque
+6. ✅ Venda já havia descontado 1 (estoque ficou -1)
+7. ✅ Adiciona os 2 gerados: -1 + 2 = 1
 
-**Exemplo 3:** Cliente compra 1 "Meio Frango Assado Recheado" (SEM estoque = 0)
+Resultado:
+✅ Meio Frango = 1 (1 unidade sobrou no estoque)
+✅ Frango Inteiro = 9 (consumiu 1 para produzir)
+✅ Vendido = 1 Meio Frango
+```
 
+---
+
+**Exemplo 3 (Cenário 3):** Cliente compra 1 "Meio Frango" (SEM estoque = 0, SEM matéria-prima)
+
+```
+Estoque inicial:
+- Meio Frango = 0
+- Frango Inteiro = 0
+- Rendimento: 1 Frango Inteiro → 2 Meios Frangos
+
+Ação: Tentativa de venda de 1 Meio Frango
+
+Processamento:
 1. ✅ Sistema verifica que é um item composto
-2. ✅ Verifica que NÃO há estoque (0)
-3. ✅ Consome 1 unidade da matéria-prima (1 venda / 2 rendimento = arredonda para 1)
-4. ✅ Registra a transação para possível reversão
+2. ✅ Verifica que NÃO há estoque (0 < 1)
+3. ✅ Botão continua habilitado (permite tentar)
+4. ❌ Ao tentar adicionar ao carrinho, verifica matéria-prima
+5. ❌ Bloqueia: "Matéria-prima insuficiente"
 
-### Cálculo de Consumo de Matéria-Prima:
+Resultado:
+❌ Venda bloqueada
+❌ Não permite adicionar ao carrinho
+```
+
+### Cálculo de Consumo de Matéria-Prima e Geração de Estoque:
 
 **IMPORTANTE:** A matéria-prima só é consumida se não houver estoque suficiente do produto composto!
 
@@ -79,15 +130,45 @@ Permitir que variações de produtos sejam derivadas de outros produtos (matéri
 Se (Estoque do produto composto >= Quantidade vendida):
   → Consome APENAS do estoque do produto composto
   → Matéria-prima NÃO é consumida
+  → Estoque final = Estoque inicial - Quantidade vendida
+  
 Senão:
   → Quantidade que falta = Quantidade vendida - Estoque atual
   → Matéria-prima consumida = ARREDONDAR_PARA_CIMA(Quantidade que falta / Rendimento)
+  → Unidades geradas = Matéria-prima consumida × Rendimento
+  → Estoque final = Estoque atual - Quantidade vendida + Unidades geradas
 ```
 
 **Exemplos:**
-- Estoque: 5 | Venda: 1 | Rendimento: 2 → Consome 0 matéria-prima (tem estoque)
-- Estoque: 0 | Venda: 1 | Rendimento: 2 → Consome 1 matéria-prima (sem estoque)
-- Estoque: 1 | Venda: 3 | Rendimento: 2 → Consome 1 matéria-prima (faltam 2 unidades)
+
+**Cenário 1 - COM estoque:**
+```
+Estoque: 5 | Venda: 1 | Rendimento: 2
+→ Tem estoque suficiente (5 >= 1)
+→ Consome: 1 do produto composto
+→ Matéria-prima: 0 (não consome)
+→ Estoque final: 5 - 1 = 4 ✅
+```
+
+**Cenário 2 - SEM estoque, gerando:**
+```
+Estoque: 0 | Venda: 1 | Rendimento: 2
+→ NÃO tem estoque (0 < 1)
+→ Faltam: 1 unidade
+→ Matéria-prima: ⌈1 / 2⌉ = 1 (consome 1)
+→ Gera: 1 × 2 = 2 unidades
+→ Estoque: -1 (já descontado) + 2 (gerados) = 1 ✅
+```
+
+**Cenário 3 - Estoque parcial:**
+```
+Estoque: 1 | Venda: 3 | Rendimento: 2
+→ NÃO tem estoque suficiente (1 < 3)
+→ Faltam: 3 - 1 = 2 unidades
+→ Matéria-prima: ⌈2 / 2⌉ = 1 (consome 1)
+→ Gera: 1 × 2 = 2 unidades
+→ Estoque: -2 (já descontado) + 2 (gerados) = 0 ✅
+```
 
 ---
 

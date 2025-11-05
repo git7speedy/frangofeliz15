@@ -239,6 +239,101 @@ Campos `stock_quantity` vindos do banco de dados ou de objetos podiam ser `undef
 
 ---
 
+### 🔧 Problema 6 Corrigido: GERAÇÃO de Estoque ao Consumir Matéria-Prima
+
+**Descrição do Problema:**
+Quando vendia produto composto SEM estoque, o sistema consumia a matéria-prima, mas **NÃO GERAVA** o estoque do produto composto conforme o rendimento configurado.
+
+**Comportamento Incorreto (Anterior):**
+```
+Estoque inicial: Meio Frango = 0, Frango Inteiro = 10
+Rendimento: 1 Frango Inteiro → 2 Meios Frangos
+Venda: 1 Meio Frango
+
+Processamento antigo:
+1. ✅ Consome 1 Frango Inteiro
+2. ❌ NÃO gera 2 Meios Frangos no estoque
+3. Resultado: Meio Frango = -1 (NEGATIVO! ❌)
+```
+
+**Comportamento Correto (Atual):**
+```
+Estoque inicial: Meio Frango = 0, Frango Inteiro = 10
+Rendimento: 1 Frango Inteiro → 2 Meios Frangos
+Venda: 1 Meio Frango
+
+Processamento novo:
+1. ✅ Consome 1 Frango Inteiro
+2. ✅ GERA 2 Meios Frangos no estoque
+3. ✅ Desconta 1 vendido (já estava -1)
+4. ✅ Resultado: -1 + 2 = 1 Meio Frango no estoque
+```
+
+**Cenários Implementados:**
+
+**Cenário 1 - COM estoque do produto composto:**
+```
+Estoque: Meio Frango = 5, Frango Inteiro = 10
+Venda: 1 Meio Frango
+✅ Consome 1 do Meio Frango
+❌ NÃO consome Frango Inteiro
+Resultado: Meio Frango = 4, Frango Inteiro = 10 ✅
+```
+
+**Cenário 2 - SEM estoque, COM matéria-prima (GERAÇÃO):**
+```
+Estoque: Meio Frango = 0, Frango Inteiro = 10
+Venda: 1 Meio Frango
+✅ Consome 1 Frango Inteiro
+✅ GERA 2 Meios Frangos
+✅ Desconta 1 vendido
+Resultado: Meio Frango = 1, Frango Inteiro = 9 ✅
+```
+
+**Cenário 3 - SEM estoque, SEM matéria-prima:**
+```
+Estoque: Meio Frango = 0, Frango Inteiro = 0
+Tentativa de venda: 1 Meio Frango
+✅ Botão habilitado
+❌ Bloqueia: "Matéria-prima insuficiente"
+❌ Não permite adicionar ao carrinho
+```
+
+**Correções Implementadas:**
+1. **Geração de estoque:** Após consumir matéria-prima, GERA `yield_quantity` unidades do produto composto
+2. **Cálculo correto:** `Estoque final = Estoque atual + Unidades geradas`
+3. **Update adicional:** Nova query para atualizar estoque do produto composto após gerar
+4. **Logs detalhados:** Console.log mostra consumo + geração + estoque final
+5. **Transação completa:** Registra unidades geradas para possível reversão
+
+**Fórmulas Implementadas:**
+```
+Matéria-prima consumida = ⌈Quantidade necessária / Rendimento⌉
+Unidades geradas = Matéria-prima consumida × Rendimento
+Estoque final = Estoque atual (já descontado) + Unidades geradas
+```
+
+**Arquivos Modificados:**
+- `/src/pages/PDV.tsx`:
+  - Linhas 1167-1233: Lógica completa de geração de estoque
+  - Linhas 1204-1226: Busca estoque atual e adiciona unidades geradas
+  - Linha 1233: Log detalhado com consumo, geração e estoque final
+  - Linha 1252: Registro correto de unidades geradas na transação
+  
+- `/FUNCIONALIDADE_ITENS_COMPOSTOS.md`:
+  - Cenários 1, 2 e 3 documentados com exemplos completos
+  - Fórmulas de cálculo atualizadas
+  - Seção "Cálculo de Consumo de Matéria-Prima e Geração de Estoque"
+
+**Resultado Final:**
+- ✅ Geração automática de estoque ao consumir matéria-prima
+- ✅ Estoque nunca fica negativo indevidamente
+- ✅ Rendimento funciona exatamente como configurado
+- ✅ Sistema completo e funcional
+- ✅ Todos os 3 cenários implementados corretamente
+
+---
+
 ## Data: 01/11/2024
 
 ---
