@@ -24,12 +24,22 @@ export default function ContasReceber() {
   const [editingReceivable, setEditingReceivable] = useState<AccountReceivable | null>(null);
   const [receivingAccount, setReceivingAccount] = useState<AccountReceivable | null>(null);
   const [receiveData, setReceiveData] = useState({ bank_account_id: '', payment_method: '' });
+
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_phone: '',
     description: '',
     amount: '',
-    due_date: format(new Date(), 'yyyy-MM-dd'),
+    due_date: getTodayDate(),
   });
 
   const handleOpenDialog = (receivable?: AccountReceivable) => {
@@ -44,7 +54,7 @@ export default function ContasReceber() {
       });
     } else {
       setEditingReceivable(null);
-      setFormData({ customer_name: '', customer_phone: '', description: '', amount: '', due_date: format(new Date(), 'yyyy-MM-dd') });
+      setFormData({ customer_name: '', customer_phone: '', description: '', amount: '', due_date: getTodayDate() });
     }
     setIsDialogOpen(true);
   };

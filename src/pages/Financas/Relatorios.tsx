@@ -11,8 +11,22 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Relatorios() {
-  const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Helper function to get date in YYYY-MM-DD format
+  const getDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Get first day of current month
+  const getFirstDayOfMonth = () => {
+    const today = new Date();
+    return getDateString(new Date(today.getFullYear(), today.getMonth(), 1));
+  };
+
+  const [startDate, setStartDate] = useState(getFirstDayOfMonth());
+  const [endDate, setEndDate] = useState(getDateString(new Date()));
   const [reportType, setReportType] = useState('mensal');
 
   const { transactions } = useFinancialTransactions({ startDate, endDate });

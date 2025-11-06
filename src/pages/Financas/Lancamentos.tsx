@@ -64,12 +64,21 @@ export default function Lancamentos() {
   const { accounts } = useBankAccounts();
   const { cards } = useCreditCards();
 
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     type: 'despesa' as TransactionType,
     description: '',
     amount: '',
-    transaction_date: format(new Date(), 'yyyy-MM-dd'),
+    transaction_date: getTodayDate(),
     category_id: '',
     bank_account_id: '',
     credit_card_id: '',
@@ -83,7 +92,7 @@ export default function Lancamentos() {
       type: 'despesa',
       description: '',
       amount: '',
-      transaction_date: format(new Date(), 'yyyy-MM-dd'),
+      transaction_date: getTodayDate(),
       category_id: '',
       bank_account_id: '',
       credit_card_id: '',
