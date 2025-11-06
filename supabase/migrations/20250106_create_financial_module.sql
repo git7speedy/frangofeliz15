@@ -213,24 +213,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_financial_categories_updated_at ON financial_categories;
 CREATE TRIGGER update_financial_categories_updated_at BEFORE UPDATE ON financial_categories
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_bank_accounts_updated_at ON bank_accounts;
 CREATE TRIGGER update_bank_accounts_updated_at BEFORE UPDATE ON bank_accounts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_credit_cards_updated_at ON credit_cards;
 CREATE TRIGGER update_credit_cards_updated_at BEFORE UPDATE ON credit_cards
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_financial_transactions_updated_at ON financial_transactions;
 CREATE TRIGGER update_financial_transactions_updated_at BEFORE UPDATE ON financial_transactions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_accounts_receivable_updated_at ON accounts_receivable;
 CREATE TRIGGER update_accounts_receivable_updated_at BEFORE UPDATE ON accounts_receivable
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_dream_board_updated_at ON dream_board;
 CREATE TRIGGER update_dream_board_updated_at BEFORE UPDATE ON dream_board
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_financial_goals_updated_at ON financial_goals;
 CREATE TRIGGER update_financial_goals_updated_at BEFORE UPDATE ON financial_goals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -294,6 +301,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_bank_balance_on_transaction ON financial_transactions;
 CREATE TRIGGER update_bank_balance_on_transaction 
   AFTER INSERT OR UPDATE ON financial_transactions
   FOR EACH ROW EXECUTE FUNCTION update_bank_account_balance();

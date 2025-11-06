@@ -24,6 +24,26 @@ Alterados todos os comandos `CREATE INDEX` para `CREATE INDEX IF NOT EXISTS` em 
 - financial_goals
 - financial_notifications
 
+#### 1.1 Erro na Migração - Trigger Duplicado
+**Erro:**
+```
+ERROR: 42710: trigger "update_financial_categories_updated_at" for relation "financial_categories" already exists
+```
+
+**Causa:**
+Similar ao erro dos índices, os triggers estavam sendo criados sem verificar se já existiam.
+
+**Solução:**
+Adicionado `DROP TRIGGER IF EXISTS` antes de cada `CREATE TRIGGER`:
+- update_financial_categories_updated_at
+- update_bank_accounts_updated_at
+- update_credit_cards_updated_at
+- update_financial_transactions_updated_at
+- update_accounts_receivable_updated_at
+- update_dream_board_updated_at
+- update_financial_goals_updated_at
+- update_bank_balance_on_transaction
+
 #### 2. Erro na Query PostgREST - Relacionamento Ambíguo
 **Erro:**
 ```
