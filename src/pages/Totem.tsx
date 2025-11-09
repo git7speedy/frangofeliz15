@@ -653,14 +653,8 @@ export default function Totem() {
       return;
     }
 
-    // Se tem telefone mas não tem cliente (novo cliente) e não tem nome, abrir popup
-    if (phone && phone.length >= 10 && !customer && !name) {
-      setShowCustomerNameDialog(true);
-      return;
-    }
-
-    // Em qualquer outro caso (sem telefone, ou com nome já preenchido), finalizar direto
-    finishOrder();
+    // Em todos os outros casos (sem telefone, ou telefone sem cadastro), abrir popup para pedir nome
+    setShowCustomerNameDialog(true);
   };
 
   const finishOrder = async () => {
